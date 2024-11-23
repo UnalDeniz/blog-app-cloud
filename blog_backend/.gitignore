@@ -3,3 +3,4 @@ blog_api/migrations/__pycache__
 blog_backend/__pycache__
 user_api/__pycache__
 user_api/migrations/__pycache__
+.env 
