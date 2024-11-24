@@ -14,10 +14,10 @@ import os
 from pathlib import Path
 from datetime import timedelta
 
-import environ
+# import environ
 
-env = environ.Env()
-environ.Env.read_env()
+# env = environ.Env()
+# environ.Env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,21 +33,17 @@ SECRET_KEY = 'django-insecure-$am$slqq(z01dq+2ac+ko2+t)5^8*0cmdkh-&4revk8xz-e*(3
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
-]
-
-CORS_ORIGIN_WHITELIST = [
-    'http://127.0.0.1:3000',
-    # Add other origins as needed
+    'http://frontend:3000',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 
-CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:3000"]
+CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:3000", "http://frontend:3000"]
 
 # Application definition
 
@@ -155,11 +151,11 @@ WSGI_APPLICATION = 'blog_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DB_NAME'),
-        'USER': env('DB_USER'),
-        'PASSWORD': env('DB_PASSWORD'),
-        'HOST': env('DB_HOST', default='localhost'),
-        'PORT': env('DB_PORT', default='5432'),
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
 }
 

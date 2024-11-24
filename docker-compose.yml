@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./blog_backend
+    ports:
+      - "8000:8000"
+    env_file: ".env"
+    depends_on:
+      - db
+    volumes:
+      - backend_data:/media
+
+  db:
+    image: postgres:13
+    env_file: ".env"
+    volumes:
+      - db_data:/var/lib/postgresql/data  # Persists data between container restarts
+
+  frontend:
+    build: ./blog_frontend
+    ports:
+      - "3000:3000"
+      
+volumes:
+  db_data:
+  backend_data:
