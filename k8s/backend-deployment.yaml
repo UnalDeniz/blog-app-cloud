@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blog-backend
+  template:
+    metadata:
+      labels:
+        app: blog-backend
+    spec:
+      containers:
+        - name: blog-backend
+          image: unaldenizzz/blog-backend
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: blog-backend-env
+          volumeMounts:
+            - mountPath: /media
+              name: backend-data
+
+      volumes:
+        - name: backend-data
+          persistentVolumeClaim:
+            claimName: backend-data-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog-backend
+spec:
+  selector:
+    app: blog-backend
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000

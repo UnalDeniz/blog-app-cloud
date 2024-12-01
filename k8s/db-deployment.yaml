@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blog-db
+  template:
+    metadata:
+      labels:
+        app: blog-db
+    spec:
+      containers:
+        - name: blog-db
+          image: postgres:13
+          envFrom:
+            - secretRef:
+                name: blog-db-env
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: db-data
+
+      volumes:
+        - name: db-data
+          persistentVolumeClaim:
+            claimName: db-data-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog-db
+spec:
+  selector:
+    app: blog-db
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432

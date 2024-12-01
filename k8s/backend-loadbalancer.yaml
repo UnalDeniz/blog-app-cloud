@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-balancer
+spec:
+  type: LoadBalancer
+  selector:
+    app: blog-backend
+  ports:
+    - port: 8000
+      targetPort: 8000
