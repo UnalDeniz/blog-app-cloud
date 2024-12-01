@@ -1,0 +1,97 @@
+* Blog Application Deployment with Kubernetes
+This repository contains Kubernetes configuration files to deploy a multi-tier blog application, including the following components:
+- Frontend (React application)
+- Backend (Django application)
+- Database (PostgreSQL)
+
+* Prerequisites
+Ensure you have the following tools installed and configured on your system:
+- Minikube
+- kubectl
+- Docker (for building images, if needed)
+
+* Steps to Deploy Locally
+** 1. Start Minikube
+   Start Minikube and (optionally) set the appropriate resource limits:
+   #+BEGIN_SRC bash
+   minikube start --cpus=4 --memory=8192
+   #+END_SRC
+
+** 2. Build Docker Images
+   If you haven't already uploaded images to a container registry,
+   build and load them into Minikube. Note that the images used should
+   be changed from the yaml(s) if you are not using the default images.
+   #+BEGIN_SRC bash
+     docker build -t blog-frontend ./blog_frontend
+     docker build -t blog-backend ./blog_backend
+     docker tag blog-frontend <dockerhub-username>/blog-frontend
+     docker tag blog-backend <dockerhub-username>/blog-backend
+   #+END_SRC
+
+** 3. Create Kubernetes Secrets
+   Use the following commands to create secrets for the backend, database, and frontend based on the provided `.env` file:
+   #+BEGIN_SRC bash
+   kubectl create secret generic blog-backend-env \
+     --from-literal=DB_NAME="blog" \
+     --from-literal=DB_USER="username" \
+     --from-literal=DB_PASSWORD="password" \
+     --from-literal=DB_HOST="blog-db" \
+     --from-literal=DB_PORT="5432"
+
+   kubectl create secret generic blog-db-env \
+     --from-literal=POSTGRES_DB="blog" \
+     --from-literal=POSTGRES_USER="username" \
+     --from-literal=POSTGRES_PASSWORD="password"
+
+   kubectl create secret generic blog-frontend-env \
+     --from-literal=REACT_APP_API_BASE_URL="http://127.0.0.1:8000"
+   #+END_SRC
+
+   The secrets will be referenced in your deployments.
+   
+** 4. Apply Kubernetes Configurations
+   Deploy the application components by applying the YAML files (if
+   there is issues with ordering apply them one by one):
+   #+BEGIN_SRC bash
+   kubectl apply -f k8s/
+   #+END_SRC
+
+** 5. Expose LoadBalancer Services
+   Run the Minikube tunnel to expose the LoadBalancer services
+   (port-forward can be used as an alternative for local testing):
+   #+BEGIN_SRC bash
+   minikube tunnel
+   #+END_SRC
+
+   Use the external IPs assigned to the services to access the application:
+   - Frontend: <external-ip>:3000
+   - Backend: <external-ip>:8000
+     
+** 6. Verify Deployment
+   Check the status of the pods and services:
+   #+BEGIN_SRC bash
+   kubectl get pods
+   kubectl get svc
+   #+END_SRC
+   
+* Updating the Deployment
+- To restart the application:
+  #+BEGIN_SRC bash
+  kubectl rollout restart deployment/<deployment-name>
+  #+END_SRC
+
+- To scale the application:
+  #+BEGIN_SRC bash
+  kubectl scale deployment/<deployment-name> --replicas=<desired-count>
+  #+END_SRC
+
+* Cleaning Up
+To stop the deployment and remove all resources:
+#+BEGIN_SRC bash
+kubectl delete -f k8s/
+minikube stop
+#+END_SRC
+
+* Notes
+- If you're deploying to a cloud platform like Google Kubernetes Engine (GKE), update the images in the deployment files to point to your container registry.
+- Make sure to replace sensitive configurations (e.g., database credentials) with Kubernetes Secrets.
