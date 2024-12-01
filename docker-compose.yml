@@ -21,6 +21,7 @@ services:
     build: ./blog_frontend
     ports:
       - "3000:3000"
+    env_file: ".env"
       
 volumes:
   db_data:
