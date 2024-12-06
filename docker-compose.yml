@@ -8,8 +8,8 @@ services:
     env_file: ".env"
     depends_on:
       - db
-    volumes:
-      - backend_data:/media
+    # volumes:
+    #   - backend_data:/media
 
   db:
     image: postgres:13
@@ -25,4 +25,4 @@ services:
       
 volumes:
   db_data:
-  backend_data:
+  # backend_data:

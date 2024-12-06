@@ -43,7 +43,7 @@ const Home = () => {
                 <Col sm={4} key={blog.id}>
                   <div className="holder">
                     <Card>
-                      <Card.Img variant="top" src={baseURL + blog.image} />
+                      <Card.Img variant="top" src={blog.image} />
                       <Card.Body>
                         <time>
                           {moment(blog.created_at).format(

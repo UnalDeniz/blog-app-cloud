@@ -127,7 +127,7 @@ const BlogDetails = () => {
           </div>
           <Row>
             <Col sm={6}>
-              <Image src={baseURL + blog.image} />
+	      <Image src={blog.image} />
             </Col>
             <Col sm={6}>
               <Card>
