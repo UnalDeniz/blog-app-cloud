@@ -204,7 +204,7 @@ GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')
 
 # Use the JSON file mounted by Kubernetes
 GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
-    '/app/key.json'  # Path inside the container
+    '/etc/gcs/key.json'  # Path inside the container
 )
 
 MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/'
