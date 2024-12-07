@@ -13,6 +13,21 @@ spec:
         app: blog-backend
     spec:
       containers:
+        - name: cloud-sql-proxy
+          image: gcr.io/cloudsql-docker/gce-proxy:1.33.1
+          args:
+          - "/cloud_sql_proxy"
+          - "--instances=$(PROJECT_ID):$(REGION):$(INSTANCE_NAME)=tcp:5432"
+          env:
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: /secrets/cloudsql/key.json
+          envFrom:
+            - secretRef:
+                name: cloud-sql-env
+          volumeMounts:
+          - name: cloudsql-instance-credentials
+            mountPath: /secrets/cloudsql
+            readOnly: true
         - name: blog-backend
           image: unaldenizzz/blog-backend
           ports:
@@ -22,13 +37,14 @@ spec:
                 name: blog-backend-env
           volumeMounts:
             - mountPath: /etc/gcs
-              name: gcs-key	      
-
+              name: gcs-key
       volumes:
         - name: gcs-key
           secret:
             secretName: gcs-credentials
-
+        - name: cloudsql-instance-credentials
+          secret:
+            secretName: cloud-sql-key
 ---
 apiVersion: v1
 kind: Service
