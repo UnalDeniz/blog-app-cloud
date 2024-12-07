@@ -21,13 +21,13 @@ spec:
             - secretRef:
                 name: blog-backend-env
           volumeMounts:
-            - mountPath: /media
-              name: backend-data
+            - mountPath: /etc/gcs
+              name: gcs-key	      
 
       volumes:
-        - name: backend-data
-          persistentVolumeClaim:
-            claimName: backend-data-pvc
+        - name: gcs-key
+          secret:
+            secretName: gcs-credentials
 
 ---
 apiVersion: v1
