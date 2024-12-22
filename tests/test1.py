@@ -1,10 +1,12 @@
 from locust import HttpUser, task, between, events
 import time
+import threading
 import random
 import string
 import requests
+from queue import Queue
 
-DYNAMIC_IP = "http://35.223.245.38:8000"
+DYNAMIC_IP = "34.71.158.112:8000"
 post_ids = []
 
 def save_user_credentials(username, password):
@@ -25,65 +27,30 @@ def get_random_category():
 @events.request.add_listener
 def normalize_request_name(request_type, name, response_time, response_length, **kwargs):
     if "/api/blogs/author/" in name:
-        name = "/api/blogs/author/[id]/"
-
-@events.test_stop.add_listener
-def on_test_stop(environment, **kwargs):
-    print("Test tamamlandı. Kullanıcı gönderileri kontrol ediliyor...")
-    with open("users.txt", "r") as file:
-        for line in file:
-            username, password = line.strip().split(",")
-            response = requests.post(
-                    f"{DYNAMIC_IP}/api/token/",
-                    json={"email": f"{username}@gmail.com", "password": password}
-                )
-
-            if response.status_code == 200:
-                access_token = response.json()["access"]
-                user_response = user_response = requests.get(
-                        f"{DYNAMIC_IP}/api/user",
-                        headers={"Authorization": f"Bearer {access_token}"}
-                    )
-                if user_response.status_code == 200:
-                    user_id = user_response.json()["user"]["id"]
-                    posts_response = requests.get(
-                            f"{DYNAMIC_IP}/api/blogs/author/{user_id}/",
-                            headers={"Authorization": f"Bearer {access_token}"}
-                        )
-                    if posts_response.status_code == 200:
-                        posts = posts_response.json()
-                        print(f"Kullanıcı {username} için {len(posts)} gönderi bulundu.")
-                        for post in posts:
-                            post_id = post["id"]
-                            post_delete = requests.delete(
-                                    f"{DYNAMIC_IP}/api/delete/{post_id}/",
-                                    headers={"Authorization": f"Bearer {access_token}"}
-                            )
-                            if post_delete.status_code == 204:
-                                print(f"Kullanıcı {username} için {post_id} numaralı gönderi silindi.")
-                            else:
-                                print(f"Kullanıcı {username} için {post_id} numaralı gönderi silinemedi.")
-                    else:
-                        print(f"Kullanıcı {username} gönderilerine erişilemedi.")
-                else:
-                    print(f"Kullanıcı {username} bilgilerine erişilemedi.")
-            else:
-                print(f"Kullanıcı {username} giriş yapamadı.")
-
+        name = "/api/blogs/author/[user_id]/"
+    elif "/api/delete/" in name:
+        name = "/api/delete/[post_id]/"    
         
 class QuickstartUser(HttpUser):
-
+    wait_time = between(1, 5)
     def on_start(self):
+        self.post_queue = Queue()
         self.username = generate_random_string()
         self.password = generate_random_string()
 
-        self.client.post("/api/register", json={
+        response = self.client.post("/api/register", json={
             "first_name": "John",
             "last_name": "Doe",
             "username": self.username,
             "password": self.password,
             "email": f"{self.username}@gmail.com"
         })
+
+        if response.status_code == 201:
+            print("User created")
+        else:
+            self.stop()
+            raise Exception(f"Register başarısız! Durum kodu: {response.status_code}")
 
         response = self.client.post("/api/token/", json={
             "email": f"{self.username}@gmail.com",
@@ -99,6 +66,18 @@ class QuickstartUser(HttpUser):
             self.access_token = None
             self.refresh_token = None
             print("Login failed")
+            self.stop()
+            raise Exception(f"Login başarısız! Durum kodu: {response.status_code}")
+        threading.Thread(target=self.delete_posts_in_background, daemon=True).start()
+
+    def on_stop(self):
+        while not self.post_queue.empty():
+            post_id = self.post_queue.get()
+            response = self.client.delete(f"/api/delete/{post_id}/",name = "/api/delete/", headers={"Authorization": f"Bearer {self.access_token}"})
+            if response.status_code == 204:
+                print(f"Blog deleted with ID: {post_id} on stop")
+            else:
+                print(f"Failed to delete blog with ID: {post_id} on stop")
 
     def view_random_post(self, post_id):
         post = self.client.get(f"/api/blog/{post_id}/", headers={"Authorization": f"Bearer {self.access_token}"})
@@ -109,6 +88,23 @@ class QuickstartUser(HttpUser):
                 print(f"Post Id: {post_id} için {len(comments.json())} yorum bulundu.")
         else:
             print("Post görüntüleme başarısız")
+
+    def delete_posts_in_background(self):
+        while True:
+            try:
+                if not self.post_queue.empty():
+                    time.sleep(2)
+                    post_id = self.post_queue.get()
+                    response = self.client.delete(f"/api/delete/{post_id}/",name = "/api/delete/", headers={"Authorization": f"Bearer {self.access_token}"})
+                    if response.status_code == 204:
+                        print(f"Blog deleted with ID: {post_id}")
+                    else:
+                        print(f"Failed to delete blog with ID: {post_id}")
+                else:
+                    time.sleep(3)
+            except Exception as e:
+                print(f"Error during deletion: {e}")
+                break
 
     @task
     def view_home_page(self):
@@ -149,7 +145,9 @@ class QuickstartUser(HttpUser):
                 }
                 response = self.client.post("/api/create", files=files, data=data, headers={"Authorization": f"Bearer {self.access_token}"})
                 if response.status_code == 201:
-                    print("Created blog")
+                    post_id = response.json().get("id")
+                    print(f"Blog created with ID: {post_id}")
+                    self.post_queue.put(post_id)
                 else:
                     print("Failed to create blog")
             else:
