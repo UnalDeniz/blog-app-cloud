@@ -30,11 +30,9 @@ spec:
             readOnly: true
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
+              cpu: 200m
             limits:
-              cpu: 300m
-              memory: 256Mi
+              cpu: 350m
         - name: blog-backend
           image: unaldenizzz/blog-backend
           ports:
@@ -47,11 +45,9 @@ spec:
               name: gcs-key
           resources:
             requests:
-              cpu: 200m
-              memory: 256Mi
+              cpu: 300m
             limits:
-              cpu: 500m
-              memory: 512Mi
+              cpu: 550m
       volumes:
         - name: gcs-key
           secret:
